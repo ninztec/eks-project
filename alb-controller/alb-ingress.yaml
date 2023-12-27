@@ -1,0 +1,607 @@
+apiVersion: v1
+items:
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      meta.helm.sh/release-name: aws-load-balancer-controller
+      meta.helm.sh/release-namespace: kube-system
+    creationTimestamp: "2023-12-25T15:20:59Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/instance: aws-load-balancer-controller
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/name: aws-load-balancer-controller
+      app.kubernetes.io/version: v2.6.2
+      helm.sh/chart: aws-load-balancer-controller-1.6.2
+    name: aws-load-balancer-controller
+    namespace: kube-system
+    resourceVersion: "177790"
+    uid: fa31c461-ffce-48a2-a93f-8ac1f99eb04b
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 2
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app.kubernetes.io/instance: aws-load-balancer-controller
+        app.kubernetes.io/name: aws-load-balancer-controller
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          prometheus.io/port: "8080"
+          prometheus.io/scrape: "true"
+        creationTimestamp: null
+        labels:
+          app.kubernetes.io/instance: aws-load-balancer-controller
+          app.kubernetes.io/name: aws-load-balancer-controller
+      spec:
+        affinity:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values:
+                    - aws-load-balancer-controller
+                topologyKey: kubernetes.io/hostname
+              weight: 100
+        containers:
+        - args:
+          - --cluster-name=raju-test-eks
+          - --ingress-class=alb
+          image: public.ecr.aws/eks/aws-load-balancer-controller:v2.6.2
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 2
+            httpGet:
+              path: /healthz
+              port: 61779
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 10
+          name: aws-load-balancer-controller
+          ports:
+          - containerPort: 9443
+            name: webhook-server
+            protocol: TCP
+          - containerPort: 8080
+            name: metrics-server
+            protocol: TCP
+          resources: {}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /tmp/k8s-webhook-server/serving-certs
+            name: cert
+            readOnly: true
+        dnsPolicy: ClusterFirst
+        priorityClassName: system-cluster-critical
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext:
+          fsGroup: 65534
+        serviceAccount: aws-load-balancer-controller
+        serviceAccountName: aws-load-balancer-controller
+        terminationGracePeriodSeconds: 10
+        volumes:
+        - name: cert
+          secret:
+            defaultMode: 420
+            secretName: aws-load-balancer-tls
+  status:
+    availableReplicas: 2
+    conditions:
+    - lastTransitionTime: "2023-12-25T15:21:03Z"
+      lastUpdateTime: "2023-12-25T15:21:03Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: "2023-12-25T15:20:59Z"
+      lastUpdateTime: "2023-12-25T15:21:03Z"
+      message: ReplicaSet "aws-load-balancer-controller-6f88d8f5d7" has successfully
+        progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 1
+    readyReplicas: 2
+    replicas: 2
+    updatedReplicas: 2
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"eks.amazonaws.com/component":"coredns","k8s-app":"kube-dns","kubernetes.io/name":"CoreDNS"},"name":"coredns","namespace":"kube-system"},"spec":{"replicas":2,"selector":{"matchLabels":{"eks.amazonaws.com/component":"coredns","k8s-app":"kube-dns"}},"strategy":{"rollingUpdate":{"maxUnavailable":1},"type":"RollingUpdate"},"template":{"metadata":{"annotations":{"eks.amazonaws.com/compute-type":"ec2"},"labels":{"eks.amazonaws.com/component":"coredns","k8s-app":"kube-dns"}},"spec":{"affinity":{"nodeAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":{"nodeSelectorTerms":[{"matchExpressions":[{"key":"kubernetes.io/os","operator":"In","values":["linux"]},{"key":"kubernetes.io/arch","operator":"In","values":["amd64","arm64"]}]}]}},"podAntiAffinity":{"preferredDuringSchedulingIgnoredDuringExecution":[{"podAffinityTerm":{"labelSelector":{"matchExpressions":[{"key":"k8s-app","operator":"In","values":["kube-dns"]}]},"topologyKey":"kubernetes.io/hostname"},"weight":100}]}},"containers":[{"args":["-conf","/etc/coredns/Corefile"],"image":"602401143452.dkr.ecr.us-west-1.amazonaws.com/eks/coredns:v1.9.3-eksbuild.2","imagePullPolicy":"IfNotPresent","livenessProbe":{"failureThreshold":5,"httpGet":{"path":"/health","port":8080,"scheme":"HTTP"},"initialDelaySeconds":60,"successThreshold":1,"timeoutSeconds":5},"name":"coredns","ports":[{"containerPort":53,"name":"dns","protocol":"UDP"},{"containerPort":53,"name":"dns-tcp","protocol":"TCP"},{"containerPort":9153,"name":"metrics","protocol":"TCP"}],"readinessProbe":{"httpGet":{"path":"/health","port":8080,"scheme":"HTTP"}},"resources":{"limits":{"memory":"170Mi"},"requests":{"cpu":"100m","memory":"70Mi"}},"securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"add":["NET_BIND_SERVICE"],"drop":["all"]},"readOnlyRootFilesystem":true},"volumeMounts":[{"mountPath":"/etc/coredns","name":"config-volume","readOnly":true},{"mountPath":"/tmp","name":"tmp"}]}],"dnsPolicy":"Default","priorityClassName":"system-cluster-critical","serviceAccountName":"coredns","tolerations":[{"effect":"NoSchedule","key":"node-role.kubernetes.io/master"},{"key":"CriticalAddonsOnly","operator":"Exists"}],"volumes":[{"emptyDir":{},"name":"tmp"},{"configMap":{"items":[{"key":"Corefile","path":"Corefile"}],"name":"coredns"},"name":"config-volume"}]}}}}
+    creationTimestamp: "2023-12-24T16:53:34Z"
+    generation: 1
+    labels:
+      eks.amazonaws.com/component: coredns
+      k8s-app: kube-dns
+      kubernetes.io/name: CoreDNS
+    name: coredns
+    namespace: kube-system
+    resourceVersion: "1351"
+    uid: ed802d26-667f-4e4f-ac5f-aedbabeb0567
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 2
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        eks.amazonaws.com/component: coredns
+        k8s-app: kube-dns
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 1
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          eks.amazonaws.com/compute-type: ec2
+        creationTimestamp: null
+        labels:
+          eks.amazonaws.com/component: coredns
+          k8s-app: kube-dns
+      spec:
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: kubernetes.io/os
+                  operator: In
+                  values:
+                  - linux
+                - key: kubernetes.io/arch
+                  operator: In
+                  values:
+                  - amd64
+                  - arm64
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                  - key: k8s-app
+                    operator: In
+                    values:
+                    - kube-dns
+                topologyKey: kubernetes.io/hostname
+              weight: 100
+        containers:
+        - args:
+          - -conf
+          - /etc/coredns/Corefile
+          image: 602401143452.dkr.ecr.us-west-1.amazonaws.com/eks/coredns:v1.9.3-eksbuild.2
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /health
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          name: coredns
+          ports:
+          - containerPort: 53
+            name: dns
+            protocol: UDP
+          - containerPort: 53
+            name: dns-tcp
+            protocol: TCP
+          - containerPort: 9153
+            name: metrics
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 8080
+              scheme: HTTP
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              memory: 170Mi
+            requests:
+              cpu: 100m
+              memory: 70Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              add:
+              - NET_BIND_SERVICE
+              drop:
+              - all
+            readOnlyRootFilesystem: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /etc/coredns
+            name: config-volume
+            readOnly: true
+          - mountPath: /tmp
+            name: tmp
+        dnsPolicy: Default
+        priorityClassName: system-cluster-critical
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        serviceAccount: coredns
+        serviceAccountName: coredns
+        terminationGracePeriodSeconds: 30
+        tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+        - key: CriticalAddonsOnly
+          operator: Exists
+        volumes:
+        - emptyDir: {}
+          name: tmp
+        - configMap:
+            defaultMode: 420
+            items:
+            - key: Corefile
+              path: Corefile
+            name: coredns
+          name: config-volume
+  status:
+    availableReplicas: 2
+    conditions:
+    - lastTransitionTime: "2023-12-24T17:00:35Z"
+      lastUpdateTime: "2023-12-24T17:00:35Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: "2023-12-24T16:53:37Z"
+      lastUpdateTime: "2023-12-24T17:00:35Z"
+      message: ReplicaSet "coredns-769569fd5d" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 1
+    readyReplicas: 2
+    replicas: 2
+    updatedReplicas: 2
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2023-12-25T15:19:10Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/component: csi-driver
+      app.kubernetes.io/managed-by: EKS
+      app.kubernetes.io/name: aws-ebs-csi-driver
+      app.kubernetes.io/version: 1.26.0
+    name: ebs-csi-controller
+    namespace: kube-system
+    resourceVersion: "177458"
+    uid: 68fa8ec1-f081-4bed-a3bc-6cd17d3b9e68
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 2
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: ebs-csi-controller
+        app.kubernetes.io/name: aws-ebs-csi-driver
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 1
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: ebs-csi-controller
+          app.kubernetes.io/component: csi-driver
+          app.kubernetes.io/managed-by: EKS
+          app.kubernetes.io/name: aws-ebs-csi-driver
+          app.kubernetes.io/version: 1.26.0
+      spec:
+        affinity:
+          nodeAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+            - preference:
+                matchExpressions:
+                - key: eks.amazonaws.com/compute-type
+                  operator: NotIn
+                  values:
+                  - fargate
+              weight: 1
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                    - ebs-csi-controller
+                topologyKey: kubernetes.io/hostname
+              weight: 100
+        containers:
+        - args:
+          - controller
+          - --endpoint=$(CSI_ENDPOINT)
+          - --k8s-tag-cluster-id=raju-test-eks
+          - --batching=true
+          - --logging-format=text
+          - --user-agent-extra=eks
+          - --v=2
+          env:
+          - name: CSI_ENDPOINT
+            value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
+          - name: CSI_NODE_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                key: key_id
+                name: aws-secret
+                optional: true
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                key: access_key
+                name: aws-secret
+                optional: true
+          - name: AWS_EC2_ENDPOINT
+            valueFrom:
+              configMapKeyRef:
+                key: endpoint
+                name: aws-meta
+                optional: true
+          - name: AWS_REGION
+            value: us-west-1
+          image: 602401143452.dkr.ecr.us-west-1.amazonaws.com/eks/aws-ebs-csi-driver:v1.26.0
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /healthz
+              port: healthz
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 3
+          name: ebs-plugin
+          ports:
+          - containerPort: 9808
+            name: healthz
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /healthz
+              port: healthz
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 3
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              cpu: 10m
+              memory: 40Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/lib/csi/sockets/pluginproxy/
+            name: socket-dir
+        - args:
+          - --timeout=60s
+          - --csi-address=$(ADDRESS)
+          - --v=2
+          - --feature-gates=Topology=true
+          - --extra-create-metadata
+          - --leader-election=true
+          - --default-fstype=ext4
+          - --kube-api-qps=20
+          - --kube-api-burst=100
+          - --worker-threads=100
+          env:
+          - name: ADDRESS
+            value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          image: 602401143452.dkr.ecr.us-west-1.amazonaws.com/eks/csi-provisioner:v3.6.2-eks-1-28-11
+          imagePullPolicy: IfNotPresent
+          name: csi-provisioner
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              cpu: 10m
+              memory: 40Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/lib/csi/sockets/pluginproxy/
+            name: socket-dir
+        - args:
+          - --timeout=60s
+          - --csi-address=$(ADDRESS)
+          - --v=2
+          - --leader-election=true
+          - --kube-api-qps=20
+          - --kube-api-burst=100
+          - --worker-threads=100
+          env:
+          - name: ADDRESS
+            value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          image: 602401143452.dkr.ecr.us-west-1.amazonaws.com/eks/csi-attacher:v4.4.2-eks-1-28-11
+          imagePullPolicy: IfNotPresent
+          name: csi-attacher
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              cpu: 10m
+              memory: 40Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/lib/csi/sockets/pluginproxy/
+            name: socket-dir
+        - args:
+          - --csi-address=$(ADDRESS)
+          - --leader-election=true
+          - --extra-create-metadata
+          - --kube-api-qps=20
+          - --kube-api-burst=100
+          - --worker-threads=100
+          env:
+          - name: ADDRESS
+            value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          image: 602401143452.dkr.ecr.us-west-1.amazonaws.com/eks/csi-snapshotter:v6.3.2-eks-1-28-11
+          imagePullPolicy: IfNotPresent
+          name: csi-snapshotter
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              cpu: 10m
+              memory: 40Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/lib/csi/sockets/pluginproxy/
+            name: socket-dir
+        - args:
+          - --timeout=60s
+          - --csi-address=$(ADDRESS)
+          - --v=2
+          - --handle-volume-inuse-error=false
+          - --leader-election=true
+          - --kube-api-qps=20
+          - --kube-api-burst=100
+          - --workers=100
+          env:
+          - name: ADDRESS
+            value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          image: 602401143452.dkr.ecr.us-west-1.amazonaws.com/eks/csi-resizer:v1.9.2-eks-1-28-11
+          imagePullPolicy: IfNotPresent
+          name: csi-resizer
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              cpu: 10m
+              memory: 40Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/lib/csi/sockets/pluginproxy/
+            name: socket-dir
+        - args:
+          - --csi-address=/csi/csi.sock
+          image: 602401143452.dkr.ecr.us-west-1.amazonaws.com/eks/livenessprobe:v2.11.0-eks-1-28-11
+          imagePullPolicy: IfNotPresent
+          name: liveness-probe
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              cpu: 10m
+              memory: 40Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /csi
+            name: socket-dir
+        dnsPolicy: ClusterFirst
+        nodeSelector:
+          kubernetes.io/os: linux
+        priorityClassName: system-cluster-critical
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext:
+          fsGroup: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
+          runAsUser: 1000
+        serviceAccount: ebs-csi-controller-sa
+        serviceAccountName: ebs-csi-controller-sa
+        terminationGracePeriodSeconds: 30
+        tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+          tolerationSeconds: 300
+        volumes:
+        - emptyDir: {}
+          name: socket-dir
+  status:
+    availableReplicas: 2
+    conditions:
+    - lastTransitionTime: "2023-12-25T15:19:31Z"
+      lastUpdateTime: "2023-12-25T15:19:31Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: "2023-12-25T15:19:11Z"
+      lastUpdateTime: "2023-12-25T15:19:31Z"
+      message: ReplicaSet "ebs-csi-controller-7666b64467" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 1
+    readyReplicas: 2
+    replicas: 2
+    updatedReplicas: 2
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""
